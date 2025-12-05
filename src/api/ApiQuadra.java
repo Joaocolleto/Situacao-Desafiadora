@@ -151,7 +151,7 @@ public class ApiQuadra {
         //SESSÃO DOS ALUGUEIS
 
         // get categorias
-        get("/categorias", (request, response) -> gson.toJson(categoriaDAO.buscarTodos()));
+        get("/Aluguel", (request, response) -> gson.toJson(AluguelDAO.buscarTodos()));
 
         // GET /categorias/:id - Buscar por ID
         get("/categorias/:id", (Request request, Response response) -> {

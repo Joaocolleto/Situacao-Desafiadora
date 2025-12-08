@@ -74,9 +74,11 @@ public class AluguelDAO {
 
                     // 2. Cria o objeto Aluguel usando os dados do ResultSet
                     Aluguel aluguel = new Aluguel(
-                        rs.getLong("quadra_idquadra"),
-                        rs.getLong("cliente_idcliente"),
-                        dataLocacao
+                        rs.getLong("idlocacao"),
+                    rs.getLong("idQuadra"),
+                    rs.getLong("idCliente"),
+                    
+                    dataLocacao
                     );
                     
                     // Adiciona o aluguel à lista
@@ -102,19 +104,21 @@ public class AluguelDAO {
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, aluguel.get());
-
+            stmt.setLong(1, aluguel.getIdCliente());
+            stmt.setLong(2, aluguel.getIdQuadra());
+            stmt.setLong(3, aluguel.getId_locacao());
+            stmt.setObject(4, aluguel.getDataLocacao());
             stmt.executeUpdate();   
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     // define o ID no objeto Produto que foi passado (importante para a API)
-                    categoria.setId(rs.getLong(1));
+                    aluguel.setIdCliente(rs.getLong(1));
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("Erro ao inserir categoria: " + categoria.getNome() + ". Detalhes: " + e.getMessage());
+            System.err.println("Erro ao inserir categoria: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -122,7 +126,7 @@ public class AluguelDAO {
     // ------------------------------------
     // UPDATE
     // ------------------------------------
-    public void atualizar(Categoria categoria) {
+    public void atualizar(Aluguel aluguel) {
 
         String sql = "UPDATE produtos SET nome = ? WHERE id = ?";
 
@@ -130,16 +134,16 @@ public class AluguelDAO {
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             // define os parâmetros (os novos valores)
-            stmt.setString(1, categoria.getNome());
+            stmt.setLong(1, aluguel.getIdCliente());
             // define o ID no WHERE (o último '?')
-            stmt.setLong(4, categoria.getId());
+            stmt.setObject(4, aluguel.getDataLocacao());
 
             // executa a atualização
             int linhasAfetadas = stmt.executeUpdate();
-            System.out.println("Categoria ID " + categoria.getId() + " atualizado. Linhas afetadas: " + linhasAfetadas);
+            System.out.println("Categoria ID " + aluguel.getIdCliente() + " atualizado. Linhas afetadas: " + linhasAfetadas);
 
         } catch (SQLException e) {
-            System.err.println("Erro ao atualizar produto ID: " + categoria.getId() + ". Detalhes: " + e.getMessage());
+            System.err.println("Erro ao atualizar produto ID: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
     }

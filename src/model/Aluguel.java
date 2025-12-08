@@ -28,6 +28,15 @@ public class Aluguel {
 
     // --- Getters e Setters ---
 
+    public Aluguel(Long id_locacao, Long idQuadra, Long idCliente, LocalDateTime dataLocacao) {
+        this.id_locacao = id_locacao;
+        this.idQuadra = idQuadra;
+        this.idCliente = idCliente;
+        this.dataLocacao = dataLocacao;
+    }
+
+
+
     public Long getId_locacao() {
         return id_locacao;
     }

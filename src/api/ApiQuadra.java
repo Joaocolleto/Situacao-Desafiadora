@@ -2,7 +2,6 @@ package api;
 
 import static spark.Spark.*;
 
-
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
@@ -91,7 +90,7 @@ public class ApiQuadra {
         });
 
         // PUT /produtos/:id - Atualizar produto existente
-        put("/cliente:id", new Route() {
+        put("/cliente/:id", new Route() {
             @Override
             public Object handle(Request request, Response response) {
                 try {
@@ -146,19 +145,15 @@ public class ApiQuadra {
             }
         });
 
-
-
-
-
-        //SESSÃO DOS ALUGUEIS
+        // SESSÃO DOS ALUGUEIS
 
         // get categorias
         get("/Aluguel", (request, response) -> gson.toJson(AluguelDAO.buscarTodos()));
 
         // GET /categorias/:id - Buscar por ID
-        get("Aluguel/:id", (Request request, Response response) -> {
+        get("/Aluguel/:id", (Request request, Response response) -> {
             try {
-                Long idQuadra = Long.parseLong(request.params(":id_qadra"));
+                Long idQuadra = Long.parseLong(request.params(":id"));
 
                 List<Aluguel> aluguel = AluguelDAO.buscarPorQuadraId(idQuadra);
 
@@ -175,7 +170,7 @@ public class ApiQuadra {
         });
 
         // POST /categorias - Criar nova categoria
-        post("/aluguel", (request, response) -> {
+        post("/Aluguel", (request, response) -> {
             try {
                 Aluguel novaCategoria = gson.fromJson(request.body(), Aluguel.class);
                 AluguelDAO.inserir(novaCategoria);
@@ -191,7 +186,7 @@ public class ApiQuadra {
         });
 
         // PUT /categorias/:id - Atualizar produto existente
-        put("/categorias/:id", (request, response) -> {
+        put("/Aluguel/:id", (request, response) -> {
             try {
                 Long id = Long.parseLong(request.params(":id")); // Usa Long
 
@@ -203,10 +198,10 @@ public class ApiQuadra {
                 Aluguel aluguelParaAtualizar = gson.fromJson(request.body(), Aluguel.class);
                 aluguelParaAtualizar.setIdQuadra(id); // garante que o ID da URL seja usado
 
-                AluguelDAO.atualizar( aluguelParaAtualizar);
+                AluguelDAO.atualizar(aluguelParaAtualizar);
 
                 response.status(200); // OK
-                return gson.toJson( aluguelParaAtualizar);
+                return gson.toJson(aluguelParaAtualizar);
 
             } catch (NumberFormatException e) {
                 response.status(400); // Bad Request
@@ -220,13 +215,14 @@ public class ApiQuadra {
         });
 
         // DELETE /categorias/:id - Deletar uma categoria
-        delete("/categorias/:id", (request, response) -> {
+        delete("/Aluguel/:id", (request, response) -> {
             try {
                 Long id = Long.parseLong(request.params(":id")); // Usa Long
 
-                if (AluguelDAO.buscarPorQuadraId(id) == null) {
+                List<Aluguel> lista = AluguelDAO.buscarPorQuadraId(id);
+                if (lista.isEmpty()) {
                     response.status(404);
-                    return "{\"mensagem\": \"Categoria não encontrada para exclusão.\"}";
+                    return "{\"mensagem\": \"aluguel não encontrado para atualização.\"}";
                 }
 
                 AluguelDAO.deletar(id);
@@ -238,8 +234,8 @@ public class ApiQuadra {
                 response.status(400);
                 return "{\"mensagem\": \"Formato de ID inválido.\"}";
             } catch (Exception e) {
-                //Pega a causa da exceção, que no caso é violação da chave estrangeira
-                if(e.getCause() instanceof java.sql.SQLIntegrityConstraintViolationException) {
+                // Pega a causa da exceção, que no caso é violação da chave estrangeira
+                if (e.getCause() instanceof java.sql.SQLIntegrityConstraintViolationException) {
                     response.status(409);
                     return "{\"mensagem\": \"Não é possível excluir uma categoria usada por mais produtos.\"}";
                 }
@@ -250,10 +246,5 @@ public class ApiQuadra {
         });
 
         System.out.println("API de Produtos iniciada na porta 4567. Acesse: http://localhost:4567/produtos");
-    }
-
-    private static void get(String path, Route route) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'get'");
     }
 }

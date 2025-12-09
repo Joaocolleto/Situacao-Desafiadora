@@ -13,36 +13,34 @@ import java.util.List;
 import model.Aluguel;
 import util.ConnectionFactory;
 
+
+
 public class AluguelDAO {
 
     // ======================================//
     // READ
     // ======================================//
     public List<Aluguel> buscarTodos() {
-        
+
         List<Aluguel> Locacao = new ArrayList<>();
 
         String sql = "SELECT * FROM locacao";
 
         try (Connection conn = ConnectionFactory.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();) {
-            
-            while(rs.next()) {
-                LocalDateTime dataLocacao = rs.getObject("data_locacao", LocalDateTime.class);
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery();) {
 
-                Aluguel aluguel = new Aluguel (
-                    rs.getLong("idlocacao"),
-                    rs.getLong("idQuadra"),
-                    rs.getLong("idCliente"),
-                    
-                    dataLocacao
-                    );
+            while (rs.next()) {
+                Aluguel aluguel = new Aluguel(
+                        rs.getLong("idlocacao"),
+                        rs.getLong("quadra_idquadra"),
+                        rs.getLong("cliente_idcliente"),
+                        rs.getObject("datalocacao", LocalDateTime.class));
                 Locacao.add(aluguel);
             }
         } catch (Exception e) {
-           System.err.println("Erro ao buscar locacoes: " + e.getMessage());
-           e.printStackTrace();
+            System.err.println("Erro ao buscar locacoes: " + e.getMessage());
+            e.printStackTrace();
         }
         return Locacao;
     }
@@ -50,47 +48,35 @@ public class AluguelDAO {
     // ======================================//
     // READ BY ID
     // ======================================//
-   public List<Aluguel> buscarPorQuadraId(Long idQuadra) {
+    public List<Aluguel> buscarPorQuadraId(Long idQuadra) {
 
-        // O tipo de retorno deve ser List<Aluguel> (e não Locacao/Aluguel singular)
-        List<Aluguel> alugueis = new ArrayList<>();
-
-        // SQL: Filtra por quadra_idquadra, que é a chave estrangeira na tabela locacao
-        String sql = "SELECT quadra_idquadra, cliente_idcliente, data_locacao FROM locacao WHERE quadra_idquadra = ?";
+        List<Aluguel> lista = new ArrayList<>();
+        String sql = "SELECT * FROM locacao WHERE quadra_idquadra = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // 1. Define o ID da Quadra no placeholder '?' do SQL
             stmt.setLong(1, idQuadra);
 
             try (ResultSet rs = stmt.executeQuery()) {
-                
-                // Itera sobre todos os resultados encontrados para esta quadra
-                while (rs.next()) {
-                    
-                    // Mapeamento correto do DATETIME para LocalDateTime
-                    LocalDateTime dataLocacao = rs.getObject("data_locacao", LocalDateTime.class);
 
-                    // 2. Cria o objeto Aluguel usando os dados do ResultSet
+                while (rs.next()) {
+
                     Aluguel aluguel = new Aluguel(
-                        rs.getLong("idlocacao"),
-                    rs.getLong("idQuadra"),
-                    rs.getLong("idCliente"),
-                    
-                    dataLocacao
-                    );
-                    
-                    // Adiciona o aluguel à lista
-                    alugueis.add(aluguel);
+                            rs.getLong("idlocacao"),
+                            rs.getLong("quadra_idquadra"),
+                            rs.getLong("cliente_idcliente"),
+                            rs.getObject("datalocacao", LocalDateTime.class));
+
+                    lista.add(aluguel);
                 }
             }
-        } catch (SQLException e) {
-            // Imprime erro com o ID da quadra que estava sendo buscada
-            System.err.println("Erro ao buscar aluguéis por Quadra ID: " + idQuadra + ". Detalhes: " + e.getMessage());
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return alugueis; // Retorna a lista de aluguéis
+
+        return lista;
     }
 
     // ======================================//
@@ -99,26 +85,26 @@ public class AluguelDAO {
     public void inserir(Aluguel aluguel) {
 
         // usa Statement.RETURN_GENERATED_KEYS para solicitar o ID gerado
-        String sql = "INSERT INTO locacao (quadra_idquadra, cliente_idcliente, data_locacao) VALUES (?,?,?)";
+        String sql = "INSERT INTO locacao (quadra_idquadra, cliente_idcliente, datalocacao) VALUES (?,?,?)";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setLong(1, aluguel.getIdCliente());
-            stmt.setLong(2, aluguel.getIdQuadra());
-            stmt.setLong(3, aluguel.getId_locacao());
-            stmt.setObject(4, aluguel.getDataLocacao());
-            stmt.executeUpdate();   
+            stmt.setLong(1, aluguel.getIdQuadra());
+            stmt.setLong(2, aluguel.getIdCliente());
+            stmt.setObject(3, aluguel.getDataLocacao());
+            stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     // define o ID no objeto Produto que foi passado (importante para a API)
-                    aluguel.setIdCliente(rs.getLong(1));
+                   aluguel.setId_locacao(rs.getLong(1));
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("Erro ao inserir categoria: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
+            System.err
+                    .println("Erro ao inserir categoria: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -128,22 +114,20 @@ public class AluguelDAO {
     // ------------------------------------
     public void atualizar(Aluguel aluguel) {
 
-        String sql = "UPDATE produtos SET nome = ? WHERE id = ?";
+        String sql = "UPDATE locacao SET quadra_idquadra = ?, cliente_idcliente = ?, data_locacao = ? WHERE idlocacao = ?";
 
-        try (Connection conn = ConnectionFactory.getConnection();
+        try (
+                Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // define os parâmetros (os novos valores)
-            stmt.setLong(1, aluguel.getIdCliente());
-            // define o ID no WHERE (o último '?')
-            stmt.setObject(4, aluguel.getDataLocacao());
+            stmt.setLong(1, aluguel.getIdQuadra());
+            stmt.setLong(2, aluguel.getIdCliente());
+            stmt.setObject(3, aluguel.getDataLocacao());
+            stmt.setLong(4, aluguel.getId_locacao());
 
-            // executa a atualização
-            int linhasAfetadas = stmt.executeUpdate();
-            System.out.println("Categoria ID " + aluguel.getIdCliente() + " atualizado. Linhas afetadas: " + linhasAfetadas);
+            stmt.executeUpdate();
 
         } catch (SQLException e) {
-            System.err.println("Erro ao atualizar produto ID: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -153,7 +137,7 @@ public class AluguelDAO {
     // ------------------------------------
     public void deletar(Long id) throws SQLIntegrityConstraintViolationException {
 
-        String sql = "DELETE FROM categorias WHERE id = ?";
+        String sql = "DELETE FROM locacao WHERE id_locacao = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -162,7 +146,7 @@ public class AluguelDAO {
 
             // executa a exclusão
             int linhasAfetadas = stmt.executeUpdate();
-            System.out.println("Tentativa de deletar Categoria ID " + id + ". Linhas afetadas: " + linhasAfetadas);
+            System.out.println("Tentativa de deletar Locação ID " + id + ". Linhas afetadas: " + linhasAfetadas);
 
         } catch (SQLIntegrityConstraintViolationException e) {
             throw new SQLIntegrityConstraintViolationException();

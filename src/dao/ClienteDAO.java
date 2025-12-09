@@ -29,9 +29,9 @@ public class ClienteDAO {
 
             while (rs.next()) {
                 Cliente cliente = new Cliente(
-                        rs.getLong("id"),
-                        rs.getString("nome"),
-                        rs.getString("telefone"));
+                        rs.getLong("id_cliente"),
+                        rs.getString("Nome"),
+                        rs.getString("Telefone"));
                 clientes.add(cliente);
             }
         } catch (Exception e) {
@@ -48,7 +48,7 @@ public class ClienteDAO {
 
         Cliente cliente = null;
 
-        String sql = "SELECT id, nome, telefone FROM cliente WHERE id = ?";
+        String sql = "SELECT id_cliente, Nome, Telefone FROM cliente WHERE id_cliente = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -58,9 +58,9 @@ public class ClienteDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     cliente = new Cliente(
-                            rs.getLong("id"),
-                            rs.getString("nome"),
-                            rs.getString("telefone"));
+                            rs.getLong("id_cliente"),
+                            rs.getString("Nome"),
+                            rs.getString("Telefone"));
                 }
             }
         } catch (SQLException e) {
@@ -76,7 +76,7 @@ public class ClienteDAO {
     public void inserir(Cliente cliente) {
 
         // usa Statement.RETURN_GENERATED_KEYS para solicitar o ID gerado
-        String sql = "INSERT INTO cliente (nome,telefone) VALUES (?,?)";
+        String sql = "INSERT INTO cliente (Nome,Telefone) VALUES (?,?)";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -104,7 +104,7 @@ public class ClienteDAO {
     // ------------------------------------
     public void atualizar(Cliente cliente) {
 
-        String sql = "UPDATE produtos SET nome = ?, telefone = ?  WHERE id = ?";
+        String sql = "UPDATE cliente SET Nome = ?, Telefone = ?  WHERE id_cliente = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -130,7 +130,7 @@ public class ClienteDAO {
     // ------------------------------------
     public void deletar(Long id) throws SQLIntegrityConstraintViolationException {
 
-        String sql = "DELETE FROM cliente WHERE id = ?";
+        String sql = "DELETE FROM cliente WHERE id_cliente = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {

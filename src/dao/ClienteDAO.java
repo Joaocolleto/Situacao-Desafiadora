@@ -15,7 +15,7 @@ import util.ConnectionFactory;
 public class ClienteDAO {
 
     // ======================================//
-    // READ
+    // READ ALL
     // ======================================//
     public List<Cliente> buscarTodos() {
 
@@ -48,7 +48,9 @@ public class ClienteDAO {
 
         Cliente cliente = null;
 
-        String sql = "SELECT id_cliente, Nome, Telefone FROM cliente WHERE id_cliente = ?";
+        // dao/ClienteDAO.java - CREATE (Correto)
+String sql = "INSERT INTO cliente (Nome, Telefone) VALUES (?, ?)"; 
+// ... usa Statement.RETURN_GENERATED_KEYS para recuperar o ID gerado
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -64,7 +66,7 @@ public class ClienteDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Erro ao buscar categoria por ID: " + id + ". Detalhes: " + e.getMessage());
+            System.err.println("Erro ao buscar cliente por ID: " + id + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
         return cliente;
@@ -75,8 +77,9 @@ public class ClienteDAO {
     // ======================================//
     public void inserir(Cliente cliente) {
 
-        // usa Statement.RETURN_GENERATED_KEYS para solicitar o ID gerado
-        String sql = "INSERT INTO cliente (Nome,Telefone) VALUES (?,?)";
+        // CORRIGIDO: Removida a coluna 'id_cliente' e reduzido para 2 (?)
+        // Assume que id_cliente é AUTO_INCREMENT.
+        String sql = "INSERT INTO cliente (Nome, Telefone) VALUES (?, ?)"; 
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -88,13 +91,14 @@ public class ClienteDAO {
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
-                    // define o ID no objeto Produto que foi passado (importante para a API)
-                     cliente.setID(rs.getLong(1));
+                    // Define o ID gerado de volta no objeto Cliente
+                    cliente.setID(rs.getLong(1));
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("Erro ao inserir categoria: " + cliente.getNome() + ". Detalhes: " + e.getMessage());
+            // Alterado o texto de erro para refletir Cliente (em vez de Categoria)
+            System.err.println("Erro ao inserir cliente: " + cliente.getNome() + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -104,7 +108,7 @@ public class ClienteDAO {
     // ------------------------------------
     public void atualizar(Cliente cliente) {
 
-        String sql = "UPDATE cliente SET Nome = ?, Telefone = ?  WHERE id_cliente = ?";
+        String sql = "UPDATE cliente SET Nome = ?, Telefone = ? WHERE id_cliente = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -139,14 +143,15 @@ public class ClienteDAO {
 
             // executa a exclusão
             int linhasAfetadas = stmt.executeUpdate();
-            System.out.println("Tentativa de deletar Categoria ID " + id + ". Linhas afetadas: " + linhasAfetadas);
+            System.out.println("Tentativa de deletar Cliente ID " + id + ". Linhas afetadas: " + linhasAfetadas);
 
         } catch (SQLIntegrityConstraintViolationException e) {
             throw new SQLIntegrityConstraintViolationException();
         }
 
         catch (SQLException e) {
-            System.err.println("Erro ao deletar categoria ID: " + id + ". Detalhes: " + e.getMessage());
+            // Alterado o texto de erro para refletir Cliente (em vez de Categoria)
+            System.err.println("Erro ao deletar cliente ID: " + id + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
             throw new SQLIntegrityConstraintViolationException();
         }

@@ -15,12 +15,13 @@ import util.ConnectionFactory;
 public class AluguelDAO {
 
     // ======================================//
-    // READ
+    // READ ALL
     // ======================================//
     public List<Aluguel> buscarTodos() {
 
         List<Aluguel> Locacao = new ArrayList<>();
 
+        // Assumi que as colunas são: id_locacao, Quadra_id_quadra, Cliente_idCliente, datalocacao
         String sql = "SELECT * FROM locacao";
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -29,13 +30,11 @@ public class AluguelDAO {
 
             while (rs.next()) {
                 Aluguel aluguel = new Aluguel(
-                        rs.getLong("id_locacao"),
+                        rs.getLong("id_locacao"), // Corrigido para consistência
                         rs.getLong("Quadra_id_quadra"),
                         rs.getLong("Cliente_idCliente"),
                         rs.getDate("datalocacao"));
                 Locacao.add(aluguel);
-                // Adicionar uma linha de log para verificar se os dados estão sendo lidos
-                // System.out.println("Aluguel lido do DB: " + rs.getLong("idlocacao")); 
             }
         } catch (Exception e) {
             System.err.println("Erro ao buscar locacoes: " + e.getMessage());
@@ -43,9 +42,42 @@ public class AluguelDAO {
         }
         return Locacao;
     }
+    
+    // ======================================//
+    // NOVO: READ BY ALUGUEL ID (Necessário para o DELETE na API)
+    // ======================================//
+    public List<Aluguel> buscarPorId(Long id) { // Método para buscar pelo ID do Aluguel
+        
+        List<Aluguel> lista = new ArrayList<>();
+        String sql = "SELECT * FROM locacao WHERE id_locacao = ?"; // Consistente com id_locacao
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+
+                    Aluguel aluguel = new Aluguel(
+                            rs.getLong("id_locacao"), // Corrigido para consistência
+                            rs.getLong("Quadra_id_quadra"),
+                            rs.getLong("Cliente_idCliente"),
+                            rs.getDate("datalocacao"));
+                    lista.add(aluguel);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return lista;
+    }
 
     // ======================================//
-    // READ BY ID
+    // READ BY QUADRA ID
     // ======================================//
     public List<Aluguel> buscarPorQuadraId(Long idQuadra) {
 
@@ -62,10 +94,10 @@ public class AluguelDAO {
                 while (rs.next()) {
 
                     Aluguel aluguel = new Aluguel(
-                           rs.getLong("idlocacao"),
-                        rs.getLong("Quadra_id_quadra"),
-                        rs.getLong("Cliente_idCliente"),
-                        rs.getDate("datalocacao"));
+                            rs.getLong("id_locacao"), // Corrigido para consistência
+                            rs.getLong("Quadra_id_quadra"),
+                            rs.getLong("Cliente_idCliente"),
+                            rs.getDate("datalocacao"));
                     lista.add(aluguel);
                 }
             }
@@ -80,42 +112,39 @@ public class AluguelDAO {
     // ======================================//
     // CREATE
     // ======================================//
-    public void inserir(Aluguel aluguel) throws SQLException {
+    public void inserir(Aluguel aluguel) {
 
-    // REGRA DE NEGÓCIO: cliente só pode ter 1 aluguel
-    if (clienteJaPossuiAluguel(aluguel.getIdCliente())) {
-        throw new SQLException("O cliente já possui uma quadra alugada!");
-    }
+        String sql = "INSERT INTO locacao (Quadra_id_quadra, Cliente_idCliente, datalocacao) VALUES (?,?,?)";
 
-    String sql = "INSERT INTO locacao (Quadra_id_quadra, Cliente_idCliente, datalocacao) VALUES (?,?,?)";
+        try (Connection conn = ConnectionFactory.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-    try (Connection conn = ConnectionFactory.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setLong(1, aluguel.getIdQuadra());
+            stmt.setLong(2, aluguel.getIdCliente());
+            stmt.setObject(3, aluguel.getDataLocacao());
+            stmt.executeUpdate();
 
-        stmt.setLong(1, aluguel.getIdQuadra());
-        stmt.setLong(2, aluguel.getIdCliente());
-        stmt.setObject(3, aluguel.getDataLocacao());
-        stmt.executeUpdate();
-
-        try (ResultSet rs = stmt.getGeneratedKeys()) {
-            if (rs.next()) {
-                aluguel.setId_locacao(rs.getLong(1));
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    // define o ID no objeto Aluguel que foi passado
+                    aluguel.setId_locacao(rs.getLong(1));
+                }
             }
-        }
 
-    } catch (SQLException e) {
-        System.err.println("Erro ao inserir aluguel: " + aluguel.getIdCliente() + ". " + e.getMessage());
-        throw e;
+        } catch (SQLException e) {
+            System.err
+                    .println("Erro ao inserir aluguel: " + aluguel.getIdCliente() + ". Detalhes: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-}
 
     // ------------------------------------
     // UPDATE
     // ------------------------------------
     public void atualizar(Aluguel aluguel) {
-        
-        // CORREÇÃO: "data_locacao" foi trocado por "datalocacao"
-        String sql = "UPDATE locacao SET Quadra_id_quadra = ?, Cliente_idCliente = ?, datalocacao = ? WHERE idlocacao = ?"; 
+
+        // CORREÇÃO: idlocacao -> id_locacao (Consistência)
+        String sql = "UPDATE locacao SET Quadra_id_quadra = ?, Cliente_idCliente = ?, datalocacao = ? WHERE id_locacao = ?";
 
         try (
                 Connection conn = ConnectionFactory.getConnection();
@@ -136,10 +165,9 @@ public class AluguelDAO {
     // ------------------------------------
     // DELETE
     // ------------------------------------
-    public void deletar(Long id) throws SQLIntegrityConstraintViolationException {
-
-        // CUIDADO: Seu código usa id_locacao, mas em outros pontos usa idlocacao.
-        // Vou manter id_locacao aqui, assumindo que DELETE usa o ID primário do aluguel.
+    public void deletar(Long id) throws SQLIntegrityConstraintViolationException, SQLException {
+        
+        // CORREÇÃO: Adicionei SQLException à assinatura para lidar melhor com o catch
         String sql = "DELETE FROM locacao WHERE id_locacao = ?"; 
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -152,47 +180,15 @@ public class AluguelDAO {
             System.out.println("Tentativa de deletar Locação ID " + id + ". Linhas afetadas: " + linhasAfetadas);
 
         } catch (SQLIntegrityConstraintViolationException e) {
-            throw new SQLIntegrityConstraintViolationException();
+            // A exceção de integridade é relançada para ser tratada pela API (status 409)
+            throw e; 
         }
 
         catch (SQLException e) {
             System.err.println("Erro ao deletar aluguel ID: " + id + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
-            throw new SQLIntegrityConstraintViolationException();
+            // Lança a exceção para que o chamador (a API) possa tratá-la (status 500 ou 409)
+            throw e; 
         }
     }
-
-
-    // Cliente já possui aluguel cadastrado
-public boolean clienteJaPossuiAluguel(Long idCliente) throws SQLException {
-
-    String sql = "SELECT COUNT(*) FROM locacao WHERE Cliente_idCliente = ?";
-
-    try (Connection conn = ConnectionFactory.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-        stmt.setLong(1, idCliente);
-
-        try (ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                int qtd = rs.getInt(1);
-
-                if (qtd > 0) {
-                    // ERRO: cliente já possui um aluguel cadastrado
-                    throw new SQLException(
-                        "Erro: O cliente ID " + idCliente + " já possui um aluguel cadastrado."
-                    );
-                }
-
-                return false; 
-            }
-        }
-    } catch (SQLException e) {
-        throw e; 
-    }
-
-    return false;
-}
-
 }

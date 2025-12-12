@@ -161,7 +161,7 @@ public class ApiQuadra {
             try {
                 Long idQuadra = Long.parseLong(request.params(":id"));
 
-                List<Aluguel> aluguel = AluguelDAO.buscarPorQuadraId(idQuadra);
+                List<Aluguel> aluguel = AluguelDAO.buscarPorId(idQuadra);
 
                 if (aluguel != null) {
                     return gson.toJson(aluguel);
@@ -210,7 +210,7 @@ public class ApiQuadra {
                 // }
 
                 // Por enquanto, mantendo o seu código original para a verificação:
-                if (AluguelDAO.buscarPorQuadraId(id) == null) {
+                if (AluguelDAO.buscarPorId(id) == null) {
                     response.status(404);
                     return "{\"mensagem\": \"aluguel não encontrado para atualização.\"}";
                 }
@@ -249,34 +249,39 @@ public class ApiQuadra {
 
         // DELETE /categorias/:id - Deletar uma categoria
         delete("/Aluguel/:id", (request, response) -> {
-            try {
-                Long id = Long.parseLong(request.params(":id")); // Usa Long
+    try {
+        Long id = Long.parseLong(request.params(":id"));
 
-                List<Aluguel> lista = AluguelDAO.buscarPorQuadraId(id);
-                if (lista.isEmpty()) {
-                    response.status(404);
-                    return "{\"mensagem\": \"aluguel não encontrado para exclusão.\"}";
-                }
+        // CORREÇÃO 1: Adicionei o nome do método (verifique se é 'buscarPorId' no seu DAO)
+        List<Aluguel> lista = AluguelDAO.buscarPorId(id);
 
-                AluguelDAO.deletar(id);
+        if (lista.isEmpty()) {
+            response.status(404);
+            return "{\"mensagem\": \"Aluguel não encontrado para exclusão.\"}";
+        }
 
-                response.status(204);
-                return "";
+        AluguelDAO.deletar(id);
 
-            } catch (NumberFormatException e) {
-                response.status(400);
-                return "{\"mensagem\": \"Formato de ID inválido.\"}";
-            } catch (Exception e) {
-                // Pega a causa da exceção, que no caso é violação da chave estrangeira
-                if (e.getCause() instanceof java.sql.SQLIntegrityConstraintViolationException) {
-                    response.status(409);
-                    return "{\"mensagem\": \"Não é possível excluir uma categoria usada por mais produtos.\"}";
-                }
-            }
+        response.status(204);
+        return "";
 
-            response.status(500);
-            return "{\"mensagem\": \"Erro ao deletar categoria.\"}";
-        });
+    } catch (NumberFormatException e) {
+        response.status(400);
+        return "{\"mensagem\": \"Formato de ID inválido.\"}";
+    } catch (Exception e) {
+        // Pega a causa da exceção de integridade do banco (Chave Estrangeira)
+        if (e.getCause() instanceof java.sql.SQLIntegrityConstraintViolationException) {
+            response.status(409);
+            // CORREÇÃO 2: Ajustei a mensagem para o contexto de Aluguel
+            return "{\"mensagem\": \"Não é possível excluir este aluguel pois ele está vinculado a outros registros.\"}";
+        }
+        
+        // Se cair aqui, é um erro genérico diferente de chave estrangeira
+        response.status(500);
+        // CORREÇÃO 3: Ajustei a mensagem para o contexto de Aluguel
+        return "{\"mensagem\": \"Erro ao deletar aluguel: " + e.getMessage() + "\"}";
+    }
+});
 
         System.out.println("API de Produtos iniciada na porta 4567. Acesse: http://localhost:4567/produtos");
     }

@@ -77,8 +77,6 @@ public class ClienteDAO {
     // ======================================//
     public void inserir(Cliente cliente) {
 
-        // CORRIGIDO: Removida a coluna 'id_cliente' e reduzido para 2 (?)
-        // Assume que id_cliente é AUTO_INCREMENT.
         String sql = "INSERT INTO cliente (Nome, Telefone) VALUES (?, ?)"; 
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -93,6 +91,7 @@ public class ClienteDAO {
                 if (rs.next()) {
                     // Define o ID gerado de volta no objeto Cliente
                     cliente.setID(rs.getLong(1));
+
                 }
             }
 

@@ -1,11 +1,13 @@
 package dao;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +23,8 @@ public class AluguelDAO {
 
         List<Aluguel> Locacao = new ArrayList<>();
 
-        // Assumi que as colunas são: id_locacao, Quadra_id_quadra, Cliente_idCliente, datalocacao
+        // Assumi que as colunas são: id_locacao, Quadra_id_quadra, Cliente_idCliente,
+        // datalocacao
         String sql = "SELECT * FROM locacao";
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -42,17 +45,17 @@ public class AluguelDAO {
         }
         return Locacao;
     }
-    
+
     // ======================================//
     // NOVO: READ BY ALUGUEL ID (Necessário para o DELETE na API)
     // ======================================//
-    public List<Aluguel> buscarPorId(Long id) { // Método para buscar pelo ID do Aluguel
-        
+    public List<Aluguel> buscarPorId(Long id) {
+
         List<Aluguel> lista = new ArrayList<>();
-        String sql = "SELECT * FROM locacao WHERE id_locacao = ?"; // Consistente com id_locacao
+        String sql = "SELECT * FROM locacao WHERE id_locacao = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setLong(1, id);
 
@@ -113,6 +116,10 @@ public class AluguelDAO {
     // CREATE
     // ======================================//
     public void inserir(Aluguel aluguel) {
+        if (clienteJaPossuiLocacao(aluguel.getIdCliente())) {
+            throw new RuntimeException("Cliente já possui uma locação ativa");
+
+        }
 
         String sql = "INSERT INTO locacao (Quadra_id_quadra, Cliente_idCliente, datalocacao) VALUES (?,?,?)";
 
@@ -121,7 +128,7 @@ public class AluguelDAO {
 
             stmt.setLong(1, aluguel.getIdQuadra());
             stmt.setLong(2, aluguel.getIdCliente());
-            stmt.setObject(3, aluguel.getDataLocacao());
+            stmt.setDate(3, aluguel.getDataLocacao());
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -166,9 +173,9 @@ public class AluguelDAO {
     // DELETE
     // ------------------------------------
     public void deletar(Long id) throws SQLIntegrityConstraintViolationException, SQLException {
-        
+
         // CORREÇÃO: Adicionei SQLException à assinatura para lidar melhor com o catch
-        String sql = "DELETE FROM locacao WHERE id_locacao = ?"; 
+        String sql = "DELETE FROM locacao WHERE id_locacao = ?";
 
         try (Connection conn = ConnectionFactory.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -181,14 +188,38 @@ public class AluguelDAO {
 
         } catch (SQLIntegrityConstraintViolationException e) {
             // A exceção de integridade é relançada para ser tratada pela API (status 409)
-            throw e; 
+            throw e;
         }
 
         catch (SQLException e) {
             System.err.println("Erro ao deletar aluguel ID: " + id + ". Detalhes: " + e.getMessage());
             e.printStackTrace();
-            // Lança a exceção para que o chamador (a API) possa tratá-la (status 500 ou 409)
-            throw e; 
+            // Lança a exceção para que o chamador (a API) possa tratá-la (status 500 ou
+            // 409)
+            throw e;
         }
+    }
+
+    // METODO DE PROIBIÇÃO DE UM USUÁRIO ALUGAR DUAS QUADRAS
+
+    public boolean clienteJaPossuiLocacao(Long idCliente) {
+
+        String sql = "SELECT COUNT(*) FROM locacao WHERE Cliente_idCliente = ?";
+
+        try (Connection conn = ConnectionFactory.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, idCliente);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1) > 0;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 }

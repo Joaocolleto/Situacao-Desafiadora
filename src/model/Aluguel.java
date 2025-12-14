@@ -15,6 +15,10 @@ public class Aluguel {
     // A data e hora da locação (data_locacao)
     private Date dataLocacao;
 
+    private Double preco;
+
+  
+
     // Construtor padrão (vazio)
     public Aluguel() {
     }
@@ -23,11 +27,12 @@ public class Aluguel {
 
     // --- Getters e Setters ---
 
-    public Aluguel(Long id_locacao, Long idQuadra, Long idCliente, Date dataLocacao) {
+    public Aluguel(Long id_locacao, Long idQuadra, Long idCliente, Date dataLocacao, Double preco) {
         this.id_locacao = id_locacao;
         this.idQuadra = idQuadra;
         this.idCliente = idCliente;
         this.dataLocacao = dataLocacao;
+        this.preco = preco;
     }
 
     public Long getId_locacao() {
@@ -60,5 +65,13 @@ public class Aluguel {
 
     public void setDataLocacao(Date dataLocacao) {
         this.dataLocacao = dataLocacao;
+    }
+
+      public Double getPreco() {
+        return preco;
+    }
+
+    public void setPreco(Double preco) {
+        this.preco = preco;
     }
 }

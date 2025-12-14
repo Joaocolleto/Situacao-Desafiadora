@@ -135,7 +135,7 @@ public class ApiQuadra {
             }
         });
 
-        // DELETE /produtos/:id - Deletar um produto
+        // DELETE /cliente/id - Deletar um produto
         delete("/cliente/:id", new Route() {
             @Override
             public Object handle(Request request, Response response) throws SQLIntegrityConstraintViolationException {
@@ -234,7 +234,7 @@ public class ApiQuadra {
                 // se a rota for para atualizar um aluguel específico.
                 
                 // Mantenho o set da Quadra conforme seu código original:
-                aluguelParaAtualizar.setIdQuadra(id); // garante que o ID da URL seja usado
+                aluguelParaAtualizar.setId_locacao(id); // garante que o ID da URL seja usado
                 
                 // RECOMENDAÇÃO: Se a rota for para atualizar um aluguel (id_locacao) específico, 
                 // você deveria chamar aluguelParaAtualizar.setId_locacao(id);
